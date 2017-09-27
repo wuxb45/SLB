@@ -1,0 +1,48 @@
+HDR = $(addsuffix .h,$(MODULES))
+SRC = $(addsuffix .c,$(MODULES) $(SOURCES))
+DEP = Makefile Makefile.common Makefile.local $(HDR) $(SRC) $(EXTERNDEP) $(EXTERNSRC)
+BIN = $(addsuffix .out,$(TARGETS))
+DIS = $(addsuffix .dis,$(TARGETS))
+CCC ?= gcc
+
+ifeq ($O,3) # make O=3
+OPT ?= -g -O3 -flto
+else ifeq ($O,r) # make O=r
+OPT ?= -DNDEBUG -O3 -flto
+else
+OPT ?= -g3 -O0
+endif
+
+FLG += $(OPT) -rdynamic -mtune=native -march=native -Wall -Wextra -std=gnu11 -pthread
+
+.PHONY : bin dis clean cleanall check
+
+bin : $(BIN)
+dis : $(DIS)
+.DEFAULT_GOAL = bin
+
+.SECONDEXPANSION:
+%.out : %.c $(DEP) $$(addsuffix .c,$$(SRC-$$@) $$(MOD-$$@)) $$(addsuffix .h,$$(MOD-$$@))
+	$(eval ALLSRC := $(SRC) $(addsuffix .c,$(SRC-$@) $(MOD-$@)))
+	$(eval ALLFLG := $(FLG) $(FLG-$@))
+	$(eval ALLLIB := $(addprefix -l,$(LIB) $(LIB-$@)))
+	$(CCC) $(ALLFLG) -o $@ $< $(ALLSRC) $(ALLLIB)
+
+%.dis : %.out
+	objdump -SlwTC $< > $@
+
+%.o : %.c
+	$(eval STEM := $(patsubst %.o,%,$@))
+	$(CCC) $(FLG) $(FLG-$(STEM)) -o $@ -c $<
+
+clean :
+	rm -rf *.out *.dis *.o
+
+cleanall :
+	rm -rf *.out *.dis *.o $(EXTERNDEP) $(EXTERNSRC)
+
+GCCINSTALL = "/usr/lib/gcc/$$(gcc -dumpmachine)/$$(gcc -dumpversion)"
+check :
+	cppcheck -I /usr/include -I /usr/local/include \
+    -I $(GCCINSTALL)/include -I $(GCCINSTALL)/include-fixed \
+    -q -D__x86_64__=1 -U__cplusplus --std=c11 --language=c --platform=unix64 --enable=all .

@@ -2899,6 +2899,7 @@ kv_refill(struct kv * const kv, const void * const key, const u32 klen, const vo
 {
   if (kv) {
     kv->klen = klen;
+    kv->extra = 0;
     kv->vlen = vlen;
     memcpy(&(kv->kv[0]), key, klen);
     memcpy(&(kv->kv[klen]), value, vlen);
@@ -5938,8 +5939,15 @@ icache_hist_update(struct __icache_hist * const hist, const u64 pkey)
   static inline void
 icache_put_entry(struct __kvmap_entry * const e, const struct kv * const kv)
 {
+  struct kv * const old = __u64_to_ptr(e->ptr);
+  if (old) old->extra = 0u;
   e->ptr = __ptr_to_u64(kv);
-  e->pkey = kv ? kvmap_pkey(kv->hash) : 0;
+  if (kv) {
+    e->pkey = kvmap_pkey(kv->hash);
+    ((struct kv *)kv)->extra = 1u;
+  } else {
+    e->pkey = 0;
+  }
 }
 
   static inline bool
@@ -6163,7 +6171,7 @@ icache_iter_destroy(struct icache_iter * const iter)
   inline void
 icache_retire(struct icache * const cache, struct kv * const kv)
 {
-  icache_invalidate(cache, kv);
+  if (kv->extra) icache_invalidate(cache, kv);
   if (cache->map_mm.rf) cache->map_mm.rf(kv, cache->map_mm.rp);
 }
 
@@ -6177,7 +6185,7 @@ __icache_kv_retire_cb(struct kv * const kv, void * const priv)
   inline void
 icache_uncache(struct icache * const cache, struct kv * const kv)
 {
-  icache_invalidate(cache, kv);
+  if (kv->extra) icache_invalidate(cache, kv);
   if (cache->map_mm.uf) cache->map_mm.uf(kv, cache->map_mm.up);
 }
 
@@ -6192,8 +6200,10 @@ __icache_kv_uncache_cb(struct kv * const kv, void * const priv)
 __icache_kv_refresh_cb(struct kv * const old, const struct kv * const new, void * const priv)
 {
   struct icache * const cache = (typeof(cache))priv;
-  icache_refresh(cache, old, new);
-  icache_retire(cache, old);
+  if (old->extra) {
+    icache_refresh(cache, old, new);
+  }
+  if (cache->map_mm.rf) cache->map_mm.rf(old, cache->map_mm.rp);
 }
 
   inline void

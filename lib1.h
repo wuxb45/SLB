@@ -604,7 +604,8 @@ stream2_destroy(struct stream2 * const stream2);
 // kv {{{
 struct kv {
   u64 hash; // hashvalue of the key
-  u32 klen;
+  u32 klen:24;
+  u32 extra:8;
   u32 vlen;
   u8 kv[];  // len(kv) == klen + vlen
 };

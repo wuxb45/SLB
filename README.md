@@ -2,7 +2,7 @@
 
 This repo contains code of [Search Lookaside Buffer](http://omega.uta.edu/~xxw4571/papers/slb.pdf), by Xingbo Wu, Fan Ni, and Song Jiang, published on ACM SoCC'17.
 
-The bibtex entry of this paper can be found at [here](https://dl.acm.org/citation.cfm?id=3127483).
+The bibtex entry of this paper can be found [here](https://dl.acm.org/citation.cfm?id=3127483).
 
 ## Implementation
 There are three SLB implementations:

@@ -3223,11 +3223,11 @@ kvmap_api_helper(int argc, char ** const argv, struct kvmap_api ** const out, st
   }
   const u64 mb = strtoull(argv[1], NULL, 10);
   if (mb == 0) {
-    // icache
+    // no icache
     return 2 + kvmap_api_helper_map(argc - 2, argv + 2, out, mm);
   }
 
-  // no icache
+  // index + icache
   struct icache * const cache = icache_create(NULL, mb);
   if (cache == NULL) {
     fprintf(stderr, "icache_create() failed\n");
